@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>StudyFlow Ultimate</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0f1220; --card:#1b1f3b; --text:#ffffff; --muted:#9aa0ff; --accent:#4da6ff;
+}
+body.light{--bg:#f4f6ff;--card:#ffffff;--text:#0f1220;--muted:#555;--accent:#007aff;}
+*{box-sizing:border-box;font-family:'Inter',sans-serif;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);transition:.3s;overflow-y:auto;padding:10px;}
+header{padding:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;}
+button{padding:10px 16px;border:none;border-radius:12px;background:var(--accent);color:black;font-weight:600;cursor:pointer;transition:.3s;margin:4px;}
+button:active{transform:scale(1.1);transition:.15s;}
+input,textarea,select{width:100%;padding:10px;margin:5px 0;border:none;border-radius:10px;background:var(--card);color:var(--text);}
+.card{background:var(--card);margin:10px 0;padding:16px;border-radius:18px;backdrop-filter:blur(12px);transition:.3s;width:100%;max-width:600px;}
+.task{display:flex;justify-content:space-between;align-items:center;margin-top:8px;flex-wrap:wrap;}
+.task.done{opacity:.4;text-decoration:line-through;transition:.3s;}
+#timer{font-size:40px;text-align:center;}
+#intro{position:fixed;inset:0;background:radial-gradient(circle,#1b1f3b,#05060f);display:flex;flex-direction:column;justify-content:center;align-items:center;z-index:9999;color:white;transition:.4s;padding:20px;text-align:center;}
+#focus{position:fixed;inset:0;background:rgba(0,0,0,.85);display:none;flex-direction:column;justify-content:center;align-items:center;z-index:6000;}
+.history{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;overflow-x:auto;}
+.emoji{font-size:24px;cursor:pointer;transition:.2s;margin:2px;}
+.emoji:hover{transform:scale(1.3);}
+.progress-bar{height:10px;background:#333;border-radius:8px;overflow:hidden;margin-top:5px;}
+.progress-fill{height:100%;background:var(--accent);width:0%;transition:.5s;}
+.quote{font-style:italic;margin-top:8px;text-align:center;}
+.mood-week{display:grid;grid-template-columns:repeat(7,1fr);gap:8px;margin-top:10px;text-align:center;}
+.mood-week div{padding:10px;border-radius:12px;background:var(--card);transition:.3s;cursor:default;font-size:12px;}
+.mood-week div.today{border:2px solid var(--accent);}
+.popup{position:fixed;top:20%;left:50%;transform:translateX(-50%);background:var(--accent);color:#000;padding:16px 28px;border-radius:20px;font-weight:600;font-size:18px;opacity:0;pointer-events:none;z-index:10000;animation:popupAnim 0.6s forwards;}
+@keyframes popupAnim{0%{opacity:0;transform:translate(-50%,-20px) scale(0.8);}50%{opacity:1;transform:translate(-50%,0px) scale(1.1);}100%{opacity:0;transform:translate(-50%,-20px) scale(1);}}
+@media(max-width:650px){.card{max-width:100%;}}
+</style>
+</head>
+<body>
+
+<!-- Intro -->
+<div id="intro">
+  <h1>📘 StudyFlow Ultimate</h1>
+  <p>Foco, produtividade e diversão!</p>
+  <button onclick="startApp()">Entrar</button>
+</div>
+
+<!-- Pop-up geral -->
+<div id="popup" class="popup">✔ Concluído!</div>
+
+<!-- Header -->
+<header>
+  <h2>Hoje</h2>
+  <div>🔥 <span id="streak">0</span></div>
+  <button onclick="toggleTheme()">🌗</button>
+</header>
+
+<!-- XP -->
+<div class="card">
+  <h3>XP: <span id="xp">0</span></h3>
+</div>
+
+<!-- Quote -->
+<div class="card">
+  <h3>Frase do dia</h3>
+  <div id="phrase" class="quote">Comece agora.</div>
+</div>
+
+<!-- Nova Tarefa -->
+<div class="card">
+  <h3>Nova Tarefa</h3>
+  <input id="title" placeholder="Título">
+  <input id="time" type="time">
+  <button onclick="addTask()">Adicionar</button>
+</div>
+
+<!-- Tarefas -->
+<div class="card">
+  <h3>Tarefas</h3>
+  <div id="tasks"></div>
+</div>
+
+<!-- Pomodoro -->
+<div class="card">
+  <h3>Pomodoro</h3>
+  <div id="timer">25:00</div>
+  <input id="pomoInput" type="number" value="25">
+  <button onclick="startPomodoro()">Iniciar</button>
+  <button onclick="pausePomodoro()">Pausar</button>
+  <button onclick="toggleFocus()">Modo Foco</button>
+  <div id="pomoHistory" class="history"></div>
+</div>
+
+<!-- Notas -->
+<div class="card">
+  <h3>Notas Rápidas</h3>
+  <textarea id="notes" rows="4" placeholder="Escreva algo..."></textarea>
+</div>
+
+<!-- Metas -->
+<div class="card">
+  <h3>Metas</h3>
+  <input id="goal" placeholder="Nova meta">
+  <button onclick="addGoal()">Adicionar</button>
+  <div id="goals"></div>
+</div>
+
+<!-- Humor Diário -->
+<div class="card">
+  <h3>Humor Diário</h3>
+  <div>
+    <span class="emoji" onclick="setMood('😁')">😁</span>
+    <span class="emoji" onclick="setMood('😐')">😐</span>
+    <span class="emoji" onclick="setMood('😢')">😢</span>
+    <span class="emoji" onclick="setMood('😡')">😡</span>
+    <span class="emoji" onclick="setMood('😆')">😆</span>
+    <span class="emoji" onclick="setMood('🤬')">🤬</span>
+  </div>
+  <div id="moodHistory" class="history"></div>
+</div>
+
+<!-- Modo Foco -->
+<div id="focus">
+  <h2>🎯 Modo Foco</h2>
+  <div id="focusTimer">25:00</div>
+  <button onclick="toggleFocus()">Sair</button>
+</div>
+
+<script>
+// INTRO
+function startApp(){intro.style.opacity=0;intro.style.pointerEvents="none";setTimeout(()=>intro.style.display="none",400);}
+
+// THEME
+function toggleTheme(){document.body.classList.toggle("light");localStorage.setItem("theme",document.body.classList.contains("light")?"light":"dark");}
+if(localStorage.getItem("theme")==="light"){document.body.classList.add("light");}
+
+// POP-UP
+const popup=document.getElementById("popup");
+function showPopup(msg){popup.textContent=msg;popup.style.animation="none";void popup.offsetWidth;popup.style.animation="popupAnim 0.6s forwards";}
+
+// TASKS
+const tasksEl=document.getElementById("tasks"),xpEl=document.getElementById("xp"),streakEl=document.getElementById("streak"),phraseEl=document.getElementById("phrase");
+let tasks=[],xp=0,streak=0;
+function addTask(){if(!title.value)return;tasks.push({t:title.value,time:time.value,done:false});title.value="";time.value="";renderTasks();}
+function toggleTask(i){tasks[i].done=!tasks[i].done;if(tasks[i].done)showPopup("✔ Tarefa concluída!");xp+=10;streak++;xpEl.textContent=xp;streakEl.textContent=streak;phraseEl.textContent=tasks[i].done?"Você concluiu uma tarefa!":"Continue focando!";renderTasks();}
+function renderTasks(){tasksEl.innerHTML="";tasks.forEach((task,i)=>{const d=document.createElement("div");d.className="task"+(task.done?" done":"");d.innerHTML=`<div>${task.t} ⏰ ${task.time||"--"}</div><button onclick="toggleTask(${i})">✔</button>`;tasksEl.appendChild(d);});}
+
+// POMODORO
+let timer=1500,interval;const timerEl=document.getElementById("timer"),pomoInput=document.getElementById("pomoInput"),pomoHistory=document.getElementById("pomoHistory");
+function updateTimer(){const m=String(Math.floor(timer/60)).padStart(2,"0"),s=String(timer%60).padStart(2,"0");timerEl.textContent=`${m}:${s}`;}
+function startPomodoro(){timer=pomoInput.value*60;updateTimer();clearInterval(interval);interval=setInterval(()=>{timer--;updateTimer();if(timer<=0){clearInterval(interval);xp+=50;xpEl.textContent=xp;addPomoHistory();showPopup("⏱ Pomodoro finalizado!");}},1000);}
+function pausePomodoro(){clearInterval(interval);}
+function addPomoHistory(){const div=document.createElement("div");div.textContent="✅";pomoHistory.appendChild(div);}
+
+// FOCUS
+function toggleFocus(){focus.style.display=focus.style.display==="flex"?"none":"flex";}
+
+// NOTES
+const notes=document.getElementById("notes");
+notes.value=localStorage.getItem("notes")||"";
+notes.addEventListener("input",()=>localStorage.setItem("notes",notes.value));
+
+// GOALS
+const goalsEl=document.getElementById("goals"),goalInput=document.getElementById("goal");
+let goals=[];
+function addGoal(){if(!goalInput.value)return;goals.push({g:goalInput.value,done:false});goalInput.value="";renderGoals();}
+function toggleGoal(i){goals[i].done=!goals[i].done;if(goals[i].done)showPopup("🔥 Meta concluída!");renderGoals();}
+function renderGoals(){goalsEl.innerHTML="";goals.forEach((goal,i)=>{const div=document.createElement("div");div.className=goal.done?"task done":"task";div.innerHTML=`<div>${goal.g}</div><button onclick="toggleGoal(${i})">✔</button><div class="progress-bar"><div class="progress-fill" style="width:${goal.done?100:0}%"></div></div>`;goalsEl.appendChild(div);});}
+
+// HUMOR DIÁRIO
+const moodHistoryEl=document.getElementById("moodHistory");
+let moods=JSON.parse(localStorage.getItem("moods")||"{}");
+const weekDays=["Domingo","Segunda","Terça","Quarta","Quinta","Sexta","Sábado"];
+function setMood(e){
+  const today=new Date();
+  const day=weekDays[today.getDay()];
+  if(moods[day]){alert("Você já registrou seu humor hoje!"); return;}
+  moods[day]=e;
+  localStorage.setItem("moods",JSON.stringify(moods));
+  renderMood();
+}
+function renderMood(){
+  moodHistoryEl.innerHTML="";
+  const divWeek=document.createElement("div");
+  divWeek.className="mood-week";
+  weekDays.forEach(day=>{
+    const d=document.createElement("div");
+    d.textContent=`${day}\n${moods[day]||"–"}`;
+    if(day===weekDays[new Date().getDay()]) d.classList.add("today");
+    divWeek.appendChild(d);
+  });
+  moodHistoryEl.appendChild(divWeek);
+}
+renderMood();
+</script>
+
+</body>
+</html>
